@@ -12,6 +12,10 @@ const DEFAULT_SETTINGS = {
   autoScrollShorts: false,  // Fitur Auto Scroll YouTube Shorts
   peekDuration: 5,          // Detik buka sementara
   decisionModel: 'julia1_hybrid', // 'julia1_hybrid' | 'fast_path'
+  aiEngine: 'local',        // 'local' (WebGL On-Device) | 'clef_flash' (Cloudflare Workers AI)
+  cfAccountId: '',          // Cloudflare Account ID
+  cfApiToken: '',           // Cloudflare API Token
+  cfFallbackLocal: true,    // Otomatis fallback ke model lokal jika kuota habis
   stats: {
     videosFiltered: 0,
     thumbnailsFiltered: 0
@@ -93,6 +97,94 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true, dataUrl });
         } catch (fetchErr) {
           sendResponse({ success: false, error: fetchErr.message });
+        }
+
+      } else if (message.type === 'TEST_CLOUDFLARE_CONNECTION') {
+        const { accountId, apiToken } = message;
+        if (!accountId || !apiToken) {
+          sendResponse({ success: false, error: 'Account ID dan API Token wajib diisi.' });
+          return;
+        }
+
+        try {
+          const resp = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/cloudflare/clef-flash`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'clef-flash',
+              state: 'Health check connectivity test.',
+              questions: {
+                is_connected: {
+                  type: 'noul',
+                  instructions: 'Is the connection active?'
+                }
+              }
+            })
+          });
+
+          const json = await resp.json().catch(() => null);
+          if (resp.ok && json && json.success) {
+            sendResponse({ success: true, message: 'Koneksi ke Cloudflare Clef-flash Berhasil! ⚡' });
+          } else {
+            const errDetail = json?.errors?.[0]?.message || `HTTP ${resp.status} ${resp.statusText}`;
+            sendResponse({ success: false, error: `Gagal: ${errDetail}` });
+          }
+        } catch (netErr) {
+          sendResponse({ success: false, error: `Network error: ${netErr.message}` });
+        }
+
+      } else if (message.type === 'ANALYZE_IMAGE_WITH_CLEF') {
+        const { accountId, apiToken, dataUrl } = message;
+        if (!accountId || !apiToken || !dataUrl) {
+          sendResponse({ success: false, error: 'Parameter tidak lengkap', fallbackNeeded: true });
+          return;
+        }
+
+        try {
+          const resp = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/cloudflare/clef-flash`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'clef-flash',
+              state: 'Analyze this video thumbnail to detect female presence, woman facial features, girl, or exposed female hair.',
+              images: [dataUrl],
+              questions: {
+                is_female: {
+                  type: 'noul',
+                  instructions: 'Does this thumbnail show any female person, woman, girl, female hair, or modesty violation?'
+                }
+              }
+            })
+          });
+
+          const json = await resp.json().catch(() => null);
+          if (resp.ok && json && json.success) {
+            const answers = json.result?.answers || {};
+            let prob = 0;
+            if (typeof answers.is_female === 'number') {
+              prob = answers.is_female;
+            } else if (answers.is_female && typeof answers.is_female.probability === 'number') {
+              prob = answers.is_female.probability;
+            }
+
+            sendResponse({
+              success: true,
+              isFemale: prob >= 0.48,
+              confidence: Number(prob.toFixed(2)),
+              modelUsed: 'Cloudflare Clef-flash (9B Decision Model)'
+            });
+          } else {
+            const errDetail = json?.errors?.[0]?.message || `HTTP ${resp.status}`;
+            sendResponse({ success: false, error: errDetail, fallbackNeeded: true });
+          }
+        } catch (fetchErr) {
+          sendResponse({ success: false, error: fetchErr.message, fallbackNeeded: true });
         }
 
       } else {

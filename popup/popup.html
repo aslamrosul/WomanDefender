@@ -60,6 +60,38 @@
         </select>
       </div>
 
+      <!-- Mesin AI Pemindai (Local vs Cloudflare Clef-flash) -->
+      <div class="form-group">
+        <label class="group-label" for="ai-engine-select">Mesin AI Pemindai</label>
+        <select id="ai-engine-select" class="custom-select">
+          <option value="local">On-Device WebGL (Default - 100% Gratis & Lokal)</option>
+          <option value="clef_flash">Cloudflare Clef-flash (9B VLM Model #1)</option>
+        </select>
+      </div>
+
+      <!-- Panel Konfigurasi Cloudflare Clef-flash (Muncul jika Clef-flash dipilih) -->
+      <div id="cf-config-panel" class="cf-config-panel hidden">
+        <div class="cf-info-header">
+          <span class="cf-badge-tag">Cloudflare Workers AI</span>
+          <span class="cf-badge-free">10.000 Neurons/Hari Gratis</span>
+        </div>
+        <div class="cf-field">
+          <label class="cf-label" for="cf-account-id">Cloudflare Account ID</label>
+          <input type="text" id="cf-account-id" class="cf-input" placeholder="ID akun Cloudflare Anda" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label" for="cf-api-token">Cloudflare API Token</label>
+          <input type="password" id="cf-api-token" class="cf-input" placeholder="Token dengan izin Workers AI Read" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="cf-actions">
+          <button type="button" id="cf-test-btn" class="cf-btn-test">🔌 Tes Koneksi</button>
+          <span id="cf-test-status" class="cf-status-text"></span>
+        </div>
+        <p class="cf-help-text">
+          <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">Buka Cloudflare Dashboard</a> untuk buat token gratis tanpa kartu kredit. Otomatis fallback ke WebGL lokal jika kuota habis.
+        </p>
+      </div>
+
       <!-- Auto Scroll Shorts -->
       <div class="toggle-row">
         <div>

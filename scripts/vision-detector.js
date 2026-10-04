@@ -526,7 +526,7 @@ class VisionDetector {
     return this.analyzeVisualSource(source);
   }
 
-  async analyzeThumbnailElement(img) {
+  async analyzeThumbnailElement(img, customSettings = {}) {
     if (!img) return null;
 
     let src = img.currentSrc || img.src;
@@ -593,7 +593,54 @@ class VisionDetector {
         return safeRes;
       }
 
-      // STAGE 2: EVALUASI DENGAN MODEL NEURAL AI (Hanya untuk gambar yang lolos Stage 1)
+      // STAGE 2-A: EVALUASI MENGGUNAKAN CLOUDFLARE CLEF-FLASH (JIKA DIAKTIFKAN USER)
+      if (customSettings?.aiEngine === 'clef_flash' && customSettings.cfAccountId && customSettings.cfApiToken) {
+        try {
+          // Render ke canvas kecil (maks 400x400) agar transmisi payload cepat dan hemat token
+          const tempCanvas = document.createElement('canvas');
+          const maxDim = 400;
+          let tw = cleanImg.naturalWidth || cleanImg.width || 320;
+          let th = cleanImg.naturalHeight || cleanImg.height || 180;
+          if (tw > maxDim || th > maxDim) {
+            const ratio = Math.min(maxDim / tw, maxDim / th);
+            tw = Math.round(tw * ratio);
+            th = Math.round(th * ratio);
+          }
+          tempCanvas.width = tw;
+          tempCanvas.height = th;
+          const tctx = tempCanvas.getContext('2d');
+          tctx.drawImage(cleanImg, 0, 0, tw, th);
+          const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.82);
+
+          const cfRes = await chrome.runtime.sendMessage({
+            type: 'ANALYZE_IMAGE_WITH_CLEF',
+            dataUrl: dataUrl,
+            accountId: customSettings.cfAccountId,
+            apiToken: customSettings.cfApiToken
+          }).catch(() => null);
+
+          if (cfRes && cfRes.success) {
+            const clefResult = {
+              hasDetectedFace: true,
+              isFemale: cfRes.isFemale,
+              femaleConfidence: cfRes.confidence,
+              hairExposed: cfRes.isFemale,
+              isProminentCurve: false,
+              vulgarityScore: cfRes.isFemale ? 0.9 : 0.0,
+              modelUsed: 'Cloudflare Clef-flash (9B Decision Model)',
+              timestamp: Date.now()
+            };
+            this.cache.set(cleanUrl, clefResult);
+            return clefResult;
+          } else {
+            console.warn('⚠️ [WomanDefender] Clef-flash API warning, fallback ke model lokal:', cfRes?.error);
+          }
+        } catch (clefErr) {
+          console.warn('⚠️ [WomanDefender] Gagal memanggil Clef-flash, fallback ke lokal:', clefErr);
+        }
+      }
+
+      // STAGE 2-B: EVALUASI DENGAN MODEL NEURAL ON-DEVICE (WebGL TinyFace 320 + Gender CNN)
       if (this.isModelLoaded && typeof faceapi !== 'undefined') {
         const neuralResult = await this.analyzeWithNeuralModel(cleanImg);
         if (neuralResult) {

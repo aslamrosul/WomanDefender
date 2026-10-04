@@ -51,7 +51,11 @@
         'autoScrollShorts',
         'filterText',
         'peekDuration',
-        'decisionModel'
+        'decisionModel',
+        'aiEngine',
+        'cfAccountId',
+        'cfApiToken',
+        'cfFallbackLocal'
       ]);
 
       settings = { ...settings, ...stored };
@@ -71,7 +75,7 @@
             if (key === 'autoScrollShorts') {
               updateShortsAutoScrollButtonUI();
             }
-            if (key === 'strictness' || key === 'decisionModel' || key === 'enabled' || key === 'filterText') {
+            if (key === 'strictness' || key === 'decisionModel' || key === 'enabled' || key === 'filterText' || key === 'aiEngine' || key === 'cfAccountId' || key === 'cfApiToken') {
               reScanNeeded = true;
             }
           }
@@ -788,7 +792,7 @@
     if (img) {
       let src = img.currentSrc || img.src || img.getAttribute('src') || '';
       if (src && src.startsWith('http')) {
-        const visual = await visionDetector.analyzeThumbnailElement(img);
+        const visual = await visionDetector.analyzeThumbnailElement(img, settings);
         if (visual) {
           const visualDecision = decisionEngine.evaluate(visual, quickMeta);
           if (visualDecision.shouldBlock) {
@@ -798,7 +802,7 @@
       } else {
         const onImgReady = async () => {
           img.removeEventListener('load', onImgReady);
-          const visual = await visionDetector.analyzeThumbnailElement(img);
+          const visual = await visionDetector.analyzeThumbnailElement(img, settings);
           if (visual) {
             const visualDecision = decisionEngine.evaluate(visual, quickMeta);
             if (visualDecision.shouldBlock) {
