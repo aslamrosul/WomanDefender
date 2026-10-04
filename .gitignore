@@ -1,0 +1,10 @@
+# Development & temporary test files
+tests/dump.txt
+tests/pixels.json
+tests/run_runner.py
+tests/test_neural.html
+*.log
+node_modules/
+dist/
+.DS_Store
+Thumbs.db

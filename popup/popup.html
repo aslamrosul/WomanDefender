@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WomanDefender AI</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">WomanDefender AI</h1>
+          <p class="brand-subtitle">Pelindung Pandangan YouTube</p>
+        </div>
+      </div>
+      <div class="toggle-wrapper">
+        <label class="switch">
+          <input type="checkbox" id="master-toggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Status Banner -->
+    <div class="status-banner" id="status-banner">
+      <span class="status-dot"></span>
+      <span id="status-text">Perlindungan Aktif (Vision AI)</span>
+    </div>
+
+    <!-- Main Settings Form -->
+    <main class="settings-body">
+      <!-- 1 Pilihan Utama: Filter Semua Wanita -->
+      <div class="filter-main-card">
+        <div class="filter-main-badge">
+          <span class="pulse-dot"></span>
+          <span>Vision AI On-Device</span>
+        </div>
+        <div class="filter-main-header">
+          <span class="filter-main-title">Filter Semua Wanita</span>
+        </div>
+        <p class="filter-main-desc">
+          Menyaring otomatis semua figur wanita (wajah, hijab/jilbab, busana terbuka) pada Thumbnail, Shorts, & Video YouTube secara akurat.
+        </p>
+      </div>
+
+      <!-- Gaya Penutup Video -->
+      <div class="form-group">
+        <label class="group-label" for="cover-style-select">Gaya Penutup Layar</label>
+        <select id="cover-style-select" class="custom-select">
+          <option value="blur">Frosted Glass Blur (Buram Elegan)</option>
+          <option value="solid">Solid Dark Shield (Layar Gelap Total)</option>
+        </select>
+      </div>
+
+      <!-- Auto Scroll Shorts -->
+      <div class="toggle-row">
+        <div>
+          <span class="toggle-title">Auto Scroll Shorts</span>
+          <p class="toggle-subtitle">Lanjut otomatis ke Short berikutnya saat selesai</p>
+        </div>
+        <label class="switch switch-sm">
+          <input type="checkbox" id="auto-scroll-toggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Auto-Mute Suara -->
+      <div class="toggle-row">
+        <div>
+          <span class="toggle-title">Auto-Mute Suara</span>
+          <p class="toggle-subtitle">Bisukan audio saat video tertutupi</p>
+        </div>
+        <label class="switch switch-sm">
+          <input type="checkbox" id="auto-mute-toggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Saring Teks Judul & Channel -->
+      <div class="toggle-row">
+        <div>
+          <span class="toggle-title">Saring Teks Judul & Channel</span>
+          <p class="toggle-subtitle">Mati = Murni Vision AI (Deteksi Gambar Saja)</p>
+        </div>
+        <label class="switch switch-sm">
+          <input type="checkbox" id="filter-text-toggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Slider Durasi Buka Sementara -->
+      <div class="slider-row">
+        <div class="slider-label-group">
+          <span class="toggle-title">Durasi Buka Sementara:</span>
+          <span id="peek-duration-val" class="highlight-val">5s</span>
+        </div>
+        <input type="range" id="peek-duration-slider" min="3" max="15" step="1" value="5" class="custom-range">
+      </div>
+
+      <!-- Statistik -->
+      <div class="stats-card">
+        <div class="stat-col">
+          <span class="stat-num" id="stat-video">0</span>
+          <span class="stat-label">Video Disaring</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-col">
+          <span class="stat-num" id="stat-thumb">0</span>
+          <span class="stat-label">Thumbnail Disaring</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span class="badge-free">100% GRATIS & LOKAL</span>
+      <span class="footer-privacy">Privasi Aman • Tanpa Server</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

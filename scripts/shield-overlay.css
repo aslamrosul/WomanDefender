@@ -1,0 +1,309 @@
+/* ModestyShield AI / WomanDefender AI - Styling Overlay & Filter */
+
+/* =================================================== */
+/* 1. OVERLAY SHIELD UNTUK PEMUTAR VIDEO YOUTUBE       */
+/* =================================================== */
+
+video.modesty-video-blurred {
+  filter: blur(45px) brightness(0.2) !important;
+  -webkit-filter: blur(45px) brightness(0.2) !important;
+  transition: filter 0.2s ease !important;
+}
+
+.modesty-video-shield-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 99999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
+  opacity: 1;
+  visibility: visible;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Tipe Frosted Glass Blur */
+.modesty-video-shield-container.style-blur {
+  background: rgba(8, 12, 18, 0.82);
+  backdrop-filter: blur(35px) saturate(110%);
+  -webkit-backdrop-filter: blur(35px) saturate(110%);
+}
+
+/* Tipe Solid Dark Shield */
+.modesty-video-shield-container.style-solid {
+  background: #090e17;
+}
+
+.modesty-shield-card {
+  background: rgba(18, 24, 38, 0.92);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(16, 185, 129, 0.25);
+  border-radius: 16px;
+  padding: 24px 32px;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  color: #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: modestyPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modestyPopIn {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modesty-shield-icon {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  margin-bottom: 4px;
+}
+
+.modesty-shield-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: #ffffff;
+}
+
+.modesty-shield-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modesty-shield-reason {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.modesty-shield-meta {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.modesty-shield-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.modesty-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.modesty-btn-allow {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+}
+
+.modesty-btn-allow:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.modesty-btn-reject {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+.modesty-btn-reject:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+}
+
+.modesty-shield-sub-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.modesty-btn-link {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.modesty-btn-link:hover {
+  color: #e2e8f0;
+}
+
+/* =================================================== */
+/* 2. FILTER & BLUR UNTUK THUMBNAIL YOUTUBE & SHORTS   */
+/* =================================================== */
+
+.modesty-thumb-container-wrapped {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Penerapan Blur Komprehensif (Mencakup Shorts & Video Biasa) */
+.modesty-thumb-blurred img,
+.modesty-thumb-blurred video,
+.modesty-thumb-blurred .yt-core-image,
+.modesty-thumb-blurred yt-image,
+.modesty-thumb-blurred a#thumbnail,
+.modesty-thumb-blurred ytd-thumbnail img,
+.modesty-thumb-blurred #thumbnail img,
+.modesty-thumb-blurred [class*="thumbnail"] img,
+.modesty-thumb-blurred a.reel-item-endpoint img,
+.modesty-thumb-blurred .shortsLockupViewModelHostThumbnailContainer img {
+  filter: blur(28px) brightness(0.55) !important;
+  -webkit-filter: blur(28px) brightness(0.55) !important;
+  transform: scale(1.05) !important; /* Mencegah border putih saat blur */
+  transition: filter 0.25s ease !important;
+  pointer-events: none !important;
+}
+
+/* Badge Disaring */
+.modesty-thumb-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  color: #10b981;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 999;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.modesty-thumb-badge:hover {
+  background: #10b981;
+  color: #ffffff;
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.modesty-thumb-badge svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* =================================================== */
+/* 3. TOMBOL AUTO SCROLL DI ATAS PEMUTAR SHORTS        */
+/* =================================================== */
+
+.modesty-shorts-autoscroll-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: auto;
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #94a3b8;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+.modesty-shorts-autoscroll-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #f1f5f9;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+.modesty-shorts-autoscroll-btn.active {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(16, 185, 129, 0.85);
+  color: #10b981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+}
+
+.modesty-shorts-autoscroll-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  transition: transform 0.3s ease;
+}
+
+.modesty-shorts-autoscroll-btn.active svg {
+  animation: modestySpinOnce 0.45s ease-out;
+}
+
+@keyframes modestySpinOnce {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(180deg); }
+}
