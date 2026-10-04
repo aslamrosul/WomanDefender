@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html><head>
+  <script src="../libs/face-api.min.js"></script>
+  <script src="../scripts/vision-detector.js"></script>
+</head><body>
+<script>
+async function runVerification() {
+  try {
+    const detector = new window.VisionDetector();
+    // Wait for model to load
+    for (let i = 0; i < 40; i++) {
+      if (detector.isModelLoaded) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    const testImages = [
+      { name: 'hubners_clean.png', expectFemale: true },
+      { name: 'male_daffa.png', expectFemale: false },
+      { name: 'game_thumb.png', expectFemale: false }
+    ];
+
+    const outcomes = [];
+
+    for (const item of testImages) {
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = item.name; });
+
+      const t0 = performance.now();
+      const res = await detector.analyzeThumbnailElement(img);
+      const elapsed = Math.round(performance.now() - t0);
+
+      outcomes.push({
+        name: item.name,
+        res,
+        elapsedMs: elapsed,
+        isFemale: res ? res.isFemale : false,
+        pass: (item.expectFemale ? (res && res.isFemale) : (!res || !res.isFemale))
+      });
+    }
+
+    await fetch('/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: true, backend: faceapi.tf.getBackend(), outcomes })
+    });
+  } catch (err) {
+    await fetch('/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: false, error: err.message })
+    });
+  }
+}
+runVerification();
+</script></body></html>

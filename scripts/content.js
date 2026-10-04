@@ -26,6 +26,10 @@
   let sessionWhitelistedVideos = new Set();
   let wasMutedByShield = false;
 
+  // State untuk Anti-Lag & Smooth 60 FPS Scrolling
+  let isUserScrolling = false;
+  let scrollStopTimer = null;
+
   // State untuk Fitur Auto Scroll Shorts
   let hasAutoScrolledCurrentShort = false;
   let lastShortVideoId = '';
@@ -91,7 +95,17 @@
       window.addEventListener('yt-navigate-finish', handlePageNavigation);
       window.addEventListener('yt-page-data-updated', handlePageNavigation);
       window.addEventListener('popstate', handlePageNavigation);
-      window.addEventListener('scroll', throttle(scanThumbnailsBatch, 350), { passive: true });
+
+      // Anti-Lag Scroll Engine: Hentikan pemindaian AI saat user aktif scroll.
+      // Scan HANYA dimulai saat user berhenti scroll (smooth 60/120 FPS tanpa hambatan!)
+      window.addEventListener('scroll', () => {
+        isUserScrolling = true;
+        clearTimeout(scrollStopTimer);
+        scrollStopTimer = setTimeout(() => {
+          isUserScrolling = false;
+          scanThumbnailsBatch();
+        }, 180);
+      }, { passive: true });
 
       setupVideoMonitoring();
       setupThumbnailObserver();
@@ -143,7 +157,7 @@
       clearInterval(videoCheckInterval);
       videoCheckInterval = null;
     }
-    videoCheckInterval = setInterval(checkCurrentVideoFrame, 850);
+    videoCheckInterval = setInterval(checkCurrentVideoFrame, 2500);
   }
 
   function getVideoElement() {
@@ -240,7 +254,7 @@
   let isCheckingVideoFrame = false;
 
   async function checkCurrentVideoFrame() {
-    if (!settings.enabled || isCurrentlyPeeking || isCheckingVideoFrame || typeof chrome === 'undefined' || !chrome.runtime?.id) return;
+    if (!settings.enabled || isCurrentlyPeeking || isCheckingVideoFrame || isUserScrolling || typeof chrome === 'undefined' || !chrome.runtime?.id) return;
 
     const video = getVideoElement();
     const videoId = getCurrentVideoId();
@@ -644,13 +658,14 @@
   function setupThumbnailObserver() {
     let debounceTimer = null;
     const observer = new MutationObserver(() => {
+      if (isUserScrolling) return;
       if (debounceTimer) return;
       debounceTimer = setTimeout(() => {
         debounceTimer = null;
-        if (settings.enabled) {
+        if (settings.enabled && !isUserScrolling) {
           scanThumbnailsBatch();
         }
-      }, 300);
+      }, 500);
     });
 
     const target = document.querySelector('ytd-app') || document.body;
@@ -659,56 +674,57 @@
     }
   }
 
+  let isScanningThumbnails = false;
+
   async function scanThumbnailsBatch() {
-    if (!settings.enabled || typeof chrome === 'undefined' || !chrome.runtime?.id) return;
+    if (!settings.enabled || isScanningThumbnails || isUserScrolling || typeof chrome === 'undefined' || !chrome.runtime?.id) return;
 
-    // Selector komprehensif HANYA untuk elemen yang BELUM diproses
-    const rawSelectors = [
-      'ytd-rich-item-renderer',
-      'ytd-video-renderer',
-      'ytd-compact-video-renderer',
-      'ytd-grid-video-renderer',
-      'ytd-rich-grid-slim-media',
-      'ytd-reel-shelf-renderer ytd-reel-item-renderer',
-      'ytd-reel-shelf-renderer yt-reel-item-renderer',
-      'ytd-reel-shelf-renderer yt-lockup-view-model',
-      'ytd-reel-shelf-renderer .shortsLockupViewModelHost',
-      'ytd-reel-shelf-renderer a.reel-item-endpoint',
-      'yt-shorts-shelf-view-model yt-lockup-view-model',
-      'yt-shorts-shelf-view-model .shortsLockupViewModelHost',
-      'grid-shelf-view-model yt-lockup-view-model',
-      'div.shortsLockupViewModelHost',
-      'ytd-reel-item-renderer',
-      'yt-reel-item-renderer',
-      'a.reel-item-endpoint'
-    ];
+    isScanningThumbnails = true;
+    try {
+      // Selector komprehensif HANYA untuk elemen yang BELUM diproses
+      const rawSelectors = [
+        'ytd-rich-item-renderer',
+        'ytd-video-renderer',
+        'ytd-compact-video-renderer',
+        'ytd-grid-video-renderer',
+        'ytd-rich-grid-slim-media',
+        'ytd-reel-shelf-renderer yt-lockup-view-model',
+        'yt-shorts-shelf-view-model yt-lockup-view-model',
+        'div.shortsLockupViewModelHost',
+        'ytd-reel-item-renderer',
+        'yt-reel-item-renderer'
+      ];
 
-    const unhandledSelector = rawSelectors.map(s => `${s}:not([data-modesty-processed])`).join(',');
-    const items = document.querySelectorAll(unhandledSelector);
-    if (!items || items.length === 0) return;
+      const unhandledSelector = rawSelectors.map(s => `${s}:not([data-modesty-processed])`).join(',');
+      const items = document.querySelectorAll(unhandledSelector);
+      if (!items || items.length === 0) return;
 
-    // Viewport Culling: Hanya proses thumbnail yang terlihat di layar (+ buffer 450px)
-    // Thumbnail yang masih jauh di bawah scroll TIDAK dianalisis agar CPU bebas beban
-    const viewportH = window.innerHeight || 800;
-    const visibleItems = [];
+      // Viewport Culling: Hanya proses thumbnail yang terlihat di layar (+ buffer 200px)
+      // Thumbnail di luar layar TIDAK dianalisis agar CPU/GPU 100% bebas beban
+      const viewportH = window.innerHeight || 800;
+      const visibleItems = [];
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const rect = item.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) continue;
-      if (rect.top <= viewportH + 450 && rect.bottom >= -350) {
-        visibleItems.push(item);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const rect = item.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) continue;
+        if (rect.top <= viewportH + 200 && rect.bottom >= -100) {
+          visibleItems.push(item);
+        }
       }
-    }
 
-    for (const item of visibleItems) {
-      await processThumbnailItem(item);
-      // Yield mikro ke browser agar UI tetap 60 FPS mulus tanpa lag
-      if (globalThis.scheduler?.yield) {
-        await scheduler.yield();
-      } else {
-        await new Promise(r => setTimeout(r, 16));
+      for (const item of visibleItems) {
+        if (isUserScrolling) break; // Jika user mulai scrolling lagi, batalkan seketika agar scroll tetap 60/120 FPS mulus!
+        await processThumbnailItem(item);
+        // Yield mikro ke browser agar UI tetap 60 FPS mulus tanpa lag
+        if (globalThis.scheduler?.yield) {
+          await scheduler.yield();
+        } else {
+          await new Promise(r => setTimeout(r, 16));
+        }
       }
+    } finally {
+      isScanningThumbnails = false;
     }
   }
 
@@ -760,16 +776,18 @@
     const quickMeta = { title: titleText, channel: channelText };
 
     // 1. Evaluasi Cepat Judul & Channel
-    const titleDecision = decisionEngine.evaluate(null, quickMeta);
-    if (titleDecision.shouldBlock) {
-      applyThumbnailBlur(thumbWrapper, item, titleDecision.reason);
-      item.dataset.modestyProcessed = 'true';
-      return;
+    if (settings.filterText) {
+      const titleDecision = decisionEngine.evaluate(null, quickMeta);
+      if (titleDecision.shouldBlock) {
+        applyThumbnailBlur(thumbWrapper, item, titleDecision.reason);
+        return;
+      }
     }
 
-    // 2. Evaluasi Gambar Visual
+    // 2. Evaluasi Gambar Visual (Single-pass eksekusi pasti)
     if (img) {
-      const evaluateImage = async () => {
+      let src = img.currentSrc || img.src || img.getAttribute('src') || '';
+      if (src && src.startsWith('http')) {
         const visual = await visionDetector.analyzeThumbnailElement(img);
         if (visual) {
           const visualDecision = decisionEngine.evaluate(visual, quickMeta);
@@ -777,19 +795,20 @@
             applyThumbnailBlur(thumbWrapper, item, visualDecision.reason);
           }
         }
-      };
-
-      if (img.complete && img.naturalWidth > 0) {
-        await evaluateImage();
       } else {
-        img.addEventListener('load', evaluateImage, { once: true });
-        if (img.src && img.src.startsWith('http')) {
-          await evaluateImage();
-        }
+        const onImgReady = async () => {
+          img.removeEventListener('load', onImgReady);
+          const visual = await visionDetector.analyzeThumbnailElement(img);
+          if (visual) {
+            const visualDecision = decisionEngine.evaluate(visual, quickMeta);
+            if (visualDecision.shouldBlock) {
+              applyThumbnailBlur(thumbWrapper, item, visualDecision.reason);
+            }
+          }
+        };
+        img.addEventListener('load', onImgReady, { once: true });
       }
     }
-
-    item.dataset.modestyProcessed = 'true';
   }
 
   function applyThumbnailBlur(thumbWrapper, item, reason) {

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="../libs/face-api.min.js"></script>
+</head>
+<body>
+<script>
+async function benchmark() {
+  try {
+    const img = new Image();
+    await new Promise(r => { img.onload = r; img.src = 'hubners_clean.png'; });
+
+    await faceapi.nets.tinyFaceDetector.loadFromUri('../models');
+
+    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.20 });
+
+    // 1. Test WebGL
+    await faceapi.tf.setBackend('webgl');
+    await faceapi.tf.ready();
+    await faceapi.detectAllFaces(img, options); // warmup
+    const t0 = performance.now();
+    for (let i = 0; i < 3; i++) {
+      await faceapi.detectAllFaces(img, options);
+    }
+    const webglTime = (performance.now() - t0) / 3;
+
+    // 2. Test CPU
+    await faceapi.tf.setBackend('cpu');
+    await faceapi.tf.ready();
+    const t1 = performance.now();
+    await faceapi.detectAllFaces(img, options);
+    const cpuTime = performance.now() - t1;
+
+    await fetch('/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webglTimeMs: Math.round(webglTime), cpuTimeMs: Math.round(cpuTime) })
+    });
+  } catch (err) {
+    await fetch('/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: err.message })
+    });
+  }
+}
+benchmark();
+</script>
+</body>
+</html>

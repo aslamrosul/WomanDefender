@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html><head><script src="../libs/face-api.min.js"></script></head><body>
+<script>
+async function test() {
+  try {
+    await faceapi.tf.setBackend('webgl');
+    await faceapi.tf.ready();
+    await faceapi.nets.tinyFaceDetector.loadFromUri('../models');
+
+    // Test loading i.ytimg.com directly with crossOrigin = 'anonymous'
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const loadPromise = new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('img load failed'));
+    });
+    img.src = 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg';
+    await loadPromise;
+
+    // Test drawing to canvas and getImageData (check if tainted!)
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, 64, 64);
+    const imgData = ctx.getImageData(0, 0, 64, 64);
+    const notTainted = imgData.data.length > 0;
+
+    // Test faceapi detection on direct image
+    const t0 = performance.now();
+    const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.25 }));
+    const inferenceTime = performance.now() - t0;
+
+    await fetch('/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: true, notTainted, detectionsCount: detections.length, inferenceTimeMs: Math.round(inferenceTime) })
+    });
+  } catch (err) {
+    await fetch('/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: false, error: err.message })
+    });
+  }
+}
+test();
+</script></body></html>

@@ -84,16 +84,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             return;
           }
           const blob = await resp.blob();
-          const buffer = await blob.arrayBuffer();
-          const bytes = new Uint8Array(buffer);
-          let binary = '';
-          const chunk = 8192;
-          for (let i = 0; i < bytes.length; i += chunk) {
-            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-          }
-          const base64 = btoa(binary);
-          const mimeType = blob.type || 'image/jpeg';
-          sendResponse({ success: true, dataUrl: `data:${mimeType};base64,${base64}` });
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          sendResponse({ success: true, dataUrl });
         } catch (fetchErr) {
           sendResponse({ success: false, error: fetchErr.message });
         }
