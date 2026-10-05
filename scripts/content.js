@@ -90,6 +90,9 @@
             removeVideoShield();
             unblurAllThumbnails();
           } else if (reScanNeeded) {
+            if (visionDetector) {
+              visionDetector.clearCache();
+            }
             unblurAllThumbnails();
             scanThumbnailsBatch();
           }
@@ -717,9 +720,13 @@
         }
       }
 
-      for (const item of visibleItems) {
+      // Batch processing: Proses thumbnail terlihat dengan concurrency terkendali (2-3 sekaligus)
+      // agar responsif, cepat, dan tidak membuat antrean panjang saat menggunakan Clef-flash
+      const concurrency = (settings.aiEngine === 'clef_flash') ? 2 : 3;
+      for (let i = 0; i < visibleItems.length; i += concurrency) {
         if (isUserScrolling) break; // Jika user mulai scrolling lagi, batalkan seketika agar scroll tetap 60/120 FPS mulus!
-        await processThumbnailItem(item);
+        const chunk = visibleItems.slice(i, i + concurrency);
+        await Promise.all(chunk.map(item => processThumbnailItem(item)));
         // Yield mikro ke browser agar UI tetap 60 FPS mulus tanpa lag
         if (globalThis.scheduler?.yield) {
           await scheduler.yield();
@@ -844,6 +851,9 @@
   }
 
   function unblurAllThumbnails() {
+    if (visionDetector) {
+      visionDetector.clearCache();
+    }
     document.querySelectorAll('.modesty-thumb-blurred').forEach((el) => {
       el.classList.remove('modesty-thumb-blurred');
     });

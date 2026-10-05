@@ -8,50 +8,68 @@ function parseClefResponse(json) {
     return { success: false, fallbackNeeded: true };
   }
   const answers = json.result?.answers || {};
+  const femaleAns = answers.is_female;
   let prob = 0;
-  if (typeof answers.is_female === 'number') {
-    prob = answers.is_female;
-  } else if (answers.is_female && typeof answers.is_female.probability === 'number') {
-    prob = answers.is_female.probability;
+  if (typeof femaleAns === 'number') {
+    prob = femaleAns;
+  } else if (femaleAns && typeof femaleAns === 'object') {
+    if (typeof femaleAns.noul === 'number') {
+      prob = femaleAns.noul;
+    } else if (typeof femaleAns.probability === 'number') {
+      prob = femaleAns.probability;
+    } else if (typeof femaleAns.prob === 'number') {
+      prob = femaleAns.prob;
+    } else if (femaleAns.choice) {
+      prob = (femaleAns.choice === 'yes' || femaleAns.choice === 'female') ? 1.0 : 0.0;
+    }
   }
 
+  const isFemale = prob >= 0.45;
   return {
     success: true,
-    isFemale: prob >= 0.48,
+    isFemale: isFemale,
     confidence: Number(prob.toFixed(2)),
     modelUsed: 'Cloudflare Clef-flash (9B Decision Model)'
   };
 }
 
-// Kasus 1: Response Wanita (Probability tinggi)
+// Kasus 1: Response Wanita Real Clef-flash ({ type: 'noul', noul: 0.942 })
 const femaleResp = {
   success: true,
   result: {
+    model: 'clef-flash',
     answers: {
-      is_female: 0.942
+      is_female: {
+        type: 'noul',
+        noul: 0.942
+      }
     }
   }
 };
 const res1 = parseClefResponse(femaleResp);
 assert.strictEqual(res1.success, true);
-assert.strictEqual(res1.isFemale, true, 'is_female 0.942 harus terdeteksi sebagai wanita');
+assert.strictEqual(res1.isFemale, true, 'is_female noul 0.942 harus terdeteksi sebagai wanita');
 assert.strictEqual(res1.confidence, 0.94);
 assert.strictEqual(res1.modelUsed, 'Cloudflare Clef-flash (9B Decision Model)');
-console.log('✓ Kasus 1 Lulus: Response wanita Clef-flash (0.942) berhasil diproses!');
+console.log('✓ Kasus 1 Lulus: Response wanita Clef-flash (noul: 0.942) berhasil diproses!');
 
-// Kasus 2: Response Pria / Non-wanita (Probability rendah)
+// Kasus 2: Response Pria / Non-wanita Real Clef-flash ({ type: 'noul', noul: 0.031 })
 const maleResp = {
   success: true,
   result: {
+    model: 'clef-flash',
     answers: {
-      is_female: 0.031
+      is_female: {
+        type: 'noul',
+        noul: 0.031
+      }
     }
   }
 };
 const res2 = parseClefResponse(maleResp);
 assert.strictEqual(res2.success, true);
-assert.strictEqual(res2.isFemale, false, 'is_female 0.031 tidak boleh diblokir');
-console.log('✓ Kasus 2 Lulus: Response pria/game Clef-flash (0.031) lolos tanpa false positive!');
+assert.strictEqual(res2.isFemale, false, 'is_female noul 0.031 tidak boleh diblokir');
+console.log('✓ Kasus 2 Lulus: Response pria/game Clef-flash (noul: 0.031) lolos tanpa false positive!');
 
 // Kasus 3: Response Error / Kuota Habis (Rate Limit 429) -> Harus Fallback
 const errorResp = {

@@ -152,12 +152,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             },
             body: JSON.stringify({
               model: 'clef-flash',
-              state: 'Analyze this video thumbnail to detect female presence, woman facial features, girl, or exposed female hair.',
+              state: 'YouTube video thumbnail content moderation.',
               images: [dataUrl],
               questions: {
                 is_female: {
                   type: 'noul',
-                  instructions: 'Does this thumbnail show any female person, woman, girl, female hair, or modesty violation?'
+                  instructions: 'Does this thumbnail depict, feature, or contain any female human (woman, girl, lady, female facial features, or female hair)?'
                 }
               }
             })
@@ -166,21 +166,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const json = await resp.json().catch(() => null);
           if (resp.ok && json && json.success) {
             const answers = json.result?.answers || {};
+            const femaleAns = answers.is_female;
             let prob = 0;
-            if (typeof answers.is_female === 'number') {
-              prob = answers.is_female;
-            } else if (answers.is_female && typeof answers.is_female.probability === 'number') {
-              prob = answers.is_female.probability;
+            if (typeof femaleAns === 'number') {
+              prob = femaleAns;
+            } else if (femaleAns && typeof femaleAns === 'object') {
+              if (typeof femaleAns.noul === 'number') {
+                prob = femaleAns.noul;
+              } else if (typeof femaleAns.probability === 'number') {
+                prob = femaleAns.probability;
+              } else if (typeof femaleAns.prob === 'number') {
+                prob = femaleAns.prob;
+              } else if (femaleAns.choice) {
+                prob = (femaleAns.choice === 'yes' || femaleAns.choice === 'female') ? 1.0 : 0.0;
+              }
             }
+
+            const isFemale = prob >= 0.45;
+            console.log(`⚡ [WomanDefender Clef-flash] Deteksi: ${isFemale ? 'Wanita Terdeteksi' : 'Bukan Wanita'} (prob: ${prob.toFixed(3)})`);
 
             sendResponse({
               success: true,
-              isFemale: prob >= 0.48,
+              isFemale: isFemale,
               confidence: Number(prob.toFixed(2)),
               modelUsed: 'Cloudflare Clef-flash (9B Decision Model)'
             });
           } else {
             const errDetail = json?.errors?.[0]?.message || `HTTP ${resp.status}`;
+            console.warn('⚠️ [WomanDefender] Clef-flash API Error:', errDetail);
             sendResponse({ success: false, error: errDetail, fallbackNeeded: true });
           }
         } catch (fetchErr) {

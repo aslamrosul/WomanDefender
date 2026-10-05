@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (res && res.success) {
           cfTestStatus.className = 'cf-status-text success';
-          cfTestStatus.textContent = '✓ Terhubung!';
+          cfTestStatus.textContent = '✓ Terhubung! Siap digunakan.';
         } else {
           cfTestStatus.className = 'cf-status-text error';
           cfTestStatus.textContent = `✕ ${res?.error || 'Gagal'}`;
